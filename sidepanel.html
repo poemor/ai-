@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>DeepSeek 侧边栏</title>
+  <style>
+    :root {
+      --ds-bg: #1c1c24; --ds-header: #141419; --ds-panel: #252530;
+      --ds-text: #ececec; --ds-text-sec: #8c8c9e; --ds-border: #2c2c38;
+      --ds-primary: #6c5ce7; --ds-primary-hover: #5b4cce;
+      --ds-msg-user: #6c5ce7; --ds-scrollbar: #3e3e52;
+    }
+    body { margin: 0; padding: 0; height: 100vh; background: var(--ds-bg); color: var(--ds-text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; flex-direction: column; overflow: hidden; }
+    #ds-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: var(--ds-header); border-bottom: 1px solid var(--ds-border); }
+    #ds-header h3 { margin: 0; font-size: 14px; font-weight: 500; color: #fff; }
+    .ds-model-select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--ds-border); font-size: 12px; background: var(--ds-bg); color: var(--ds-text); outline: none; cursor: pointer; }
+    .ds-icon-btn { background: transparent; border: none; color: var(--ds-text-sec); cursor: pointer; padding: 6px; border-radius: 6px; font-size: 14px; transition: 0.2s; }
+    .ds-icon-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    #ds-prompts-bar { display: flex; gap: 8px; padding: 10px 15px; overflow-x: auto; background: var(--ds-bg); border-bottom: 1px solid var(--ds-border); }
+    #ds-prompts-bar::-webkit-scrollbar { display: none; }
+    .ds-prompt-tag { background: var(--ds-panel); border: 1px solid var(--ds-border); padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--ds-text-sec); transition: 0.2s; }
+    .ds-prompt-tag:hover { background: var(--ds-primary); color: #fff; border-color: var(--ds-primary); }
+    #ds-chat-box { flex: 1; padding: 15px 10px 15px 15px; overflow-y: auto; scroll-behavior: smooth; direction: rtl; display: block; }
+    #ds-chat-box::-webkit-scrollbar { width: 6px; }
+    #ds-chat-box::-webkit-scrollbar-track { background: transparent; }
+    #ds-chat-box::-webkit-scrollbar-thumb { background: var(--ds-scrollbar); border-radius: 4px; }
+    .ds-msg { direction: ltr; display: flex; flex-direction: column; width: 100%; margin-bottom: 18px; }
+    .ds-msg.user { align-items: flex-end; } .ds-msg.ai { align-items: flex-start; }
+    .ds-msg-bubble { padding: 10px 14px; font-size: 13.5px; line-height: 1.6; word-wrap: break-word; max-width: 88%; border-radius: 10px; }
+    .ds-msg.user .ds-msg-bubble { background: var(--ds-msg-user); color: #fff; border-bottom-right-radius: 2px; }
+    .ds-msg.ai .ds-msg-bubble { background: transparent; color: var(--ds-text); padding-left: 0; }
+    .ds-msg-img { max-width: 200px; max-height: 150px; border-radius: 8px; margin-bottom: 8px; display: block; }
+    .ds-msg-bubble pre { background: #111115; color: #d4d4d4; padding: 12px; border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 12px; margin: 8px 0; border: 1px solid var(--ds-border); }
+    .ds-msg-bubble code { background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 12px; }
+    .ds-msg-bubble pre code { background: transparent; padding: 0; }
+    .ds-reasoning { margin-bottom: 8px; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px dashed var(--ds-border); overflow: hidden; width: 100%; }
+    .ds-reasoning summary { padding: 8px 12px; font-size: 12px; color: var(--ds-text-sec); cursor: pointer; font-weight: 500; outline: none; }
+    .ds-reasoning-content { padding: 10px 12px; font-size: 12.5px; color: #8c8c9e; border-top: 1px dashed var(--ds-border); white-space: pre-wrap; }
+    #ds-preview-container { display: none; padding: 8px 15px 0 15px; background: var(--ds-bg); }
+    .ds-preview-card { display: flex; align-items: center; gap: 8px; background: var(--ds-panel); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--ds-border); width: fit-content; }
+    .ds-preview-card img { height: 36px; width: 36px; object-fit: cover; border-radius: 4px; }
+    .ds-preview-card span { font-size: 11px; color: var(--ds-text-sec); }
+    .ds-preview-remove { background: none; border: none; color: var(--ds-text-sec); cursor: pointer; font-size: 12px; }
+    #ds-input-area { padding: 15px; border-top: 1px solid var(--ds-border); background: var(--ds-bg); display: flex; flex-direction: column; gap: 10px; }
+    #ds-textarea { width: 100%; height: 85px; padding: 12px; border: 1px solid var(--ds-border); border-radius: 10px; resize: none; outline: none; background: var(--ds-panel); color: var(--ds-text); font-family: inherit; font-size: 13.5px; box-sizing: border-box; }
+    #ds-textarea:focus { border-color: var(--ds-primary); }
+    .ds-controls { display: flex; justify-content: space-between; align-items: center; }
+    #ds-send-btn { background: var(--ds-primary); color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-weight: 500; font-size: 13px; }
+    #ds-send-btn:hover { background: var(--ds-primary-hover); }
+    #ds-send-btn:disabled { background: var(--ds-border); color: var(--ds-text-sec); cursor: not-allowed; }
+    @keyframes ds-blink { 50% { opacity: 0; } }
+    .ds-cursor { display: inline-block; width: 5px; height: 14px; background: var(--ds-primary); margin-left: 4px; vertical-align: middle; animation: ds-blink 1s step-start infinite; }
+  </style>
+</head>
+<body>
+  <div id="ds-header">
+    <h3>Sider x DeepSeek <span style="font-size:10px;color:var(--ds-primary);margin-left:4px;">原生版</span></h3>
+    <select id="ds-model-select" class="ds-model-select">
+      <option value="deepseek-flash">Flash 识图+快答</option>
+      <option value="deepseek-chat">V3 通用对话</option>
+      <option value="deepseek-reasoner">R1 深度思考</option>
+    </select>
+    <div style="display:flex;gap:2px;">
+      <button class="ds-icon-btn" id="ds-clear-btn" title="清空历史">🗑️</button>
+      <button class="ds-icon-btn" id="ds-setting-btn" title="设置 API">⚙️</button>
+    </div>
+  </div>
+  <div id="ds-prompts-bar"></div>
+  <div id="ds-chat-box"></div>
+  <div id="ds-preview-container">
+    <div class="ds-preview-card">
+      <img id="ds-img-thumb" src="" alt="预览">
+      <span>已附加图片</span>
+      <button class="ds-preview-remove" id="ds-img-clear">✖</button>
+    </div>
+  </div>
+  <div id="ds-input-area">
+    <textarea id="ds-textarea" placeholder="输入问题，按 Enter 发送..."></textarea>
+    <div class="ds-controls">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="ds-icon-btn" id="ds-crop-btn" title="框选网页截图">✂️ 截图</button>
+        <button class="ds-icon-btn" id="ds-upload-btn" title="上传本地图片">🖼️</button>
+        <input type="file" id="ds-file-input" accept="image/*" style="display:none;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ds-text-sec);cursor:pointer;margin-left:4px;">
+          <input type="checkbox" id="ds-use-context" checked>
+          结合网页内容
+        </label>
+      </div>
+      <button id="ds-send-btn">发送</button>
+    </div>
+  </div>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
